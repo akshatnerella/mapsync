@@ -1,13 +1,19 @@
 from flask import Flask, request, jsonify
-from firebase_admin import auth, initialize_app, firestore, credentials
+from firebase_admin import auth, initialize_app, firestore
+from flask_cors import CORS
 import random
 import string
 
 app = Flask(__name__)
+CORS(app, resources={
+    r"/*": {
+        "origins": ["http://localhost:5173", "https://mapsyncfrontend-chi.vercel.app"],
+        "methods": ["GET", "POST", "OPTIONS"],
+        "allow_headers": ["Content-Type"]
+    }
+})
 
-# Initialize Firebase with credentials
-cred = credentials.Certificate('firebase-credentials.json')
-initialize_app(cred)
+initialize_app()
 db = firestore.client()
 
 @app.route("/auth/verify-token", methods=["POST"])
