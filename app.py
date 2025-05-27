@@ -8,9 +8,9 @@ import os
 app = Flask(__name__)
 CORS(app, resources={
     r"/*": {
-        "origins": ["http://localhost:5173", "https://mapsyncfrontend-chi.vercel.app"],
+        "origins": ["http://localhost:5173", "https://mapsyncfrontend-chi.vercel.app", "https://mapsync.onrender.com"],
         "methods": ["GET", "POST", "OPTIONS"],
-        "allow_headers": ["Content-Type"]
+        "allow_headers": ["Content-Type", "Authorization"]
     }
 })
 
