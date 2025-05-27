@@ -5,6 +5,8 @@ import random
 import string
 import os
 from datetime import datetime
+import firebase_admin
+from firebase_admin import credentials, firestore
 
 app = Flask(__name__)
 CORS(app, resources={
@@ -15,13 +17,21 @@ CORS(app, resources={
     }
 })
 
-# Initialize Firebase with a default app if credentials are not available
-try:
-    initialize_app()
-    db = firestore.client()
-except Exception as e:
-    print(f"Warning: Running without Firebase: {e}")
-    db = None
+# Initialize Firebase Admin SDK conditionally
+db = None
+
+if os.getenv('GOOGLE_APPLICATION_CREDENTIALS'):
+    try:
+        cred = credentials.ApplicationDefault()
+        firebase_admin.initialize_app(cred)
+        db = firestore.client()
+        print("Firebase initialized successfully.")
+    except Exception as e:
+        print(f"Error initializing Firebase: {e}")
+        print("Please ensure your GOOGLE_APPLICATION_CREDENTIALS environment variable points to a valid service account key file.")
+else:
+    print("GOOGLE_APPLICATION_CREDENTIALS environment variable not set.")
+    print("Firebase will not be initialized. Please set the environment variable to enable Firestore access.")
 
 def generate_invite_code(length=6):
     characters = string.ascii_uppercase + string.digits
@@ -79,8 +89,8 @@ def get_trip(code):
     print(f"Attempting to fetch trip with code: {code}")  # Debug logging
     
     if not db:
-        print("Firestore not initialized")  # Debug logging
-        return jsonify({"status": "error", "message": "Database not available"}), 503
+        print("Firestore not initialized (db object is None).")  # More specific logging
+        return jsonify({"status": "error", "message": "Database not available. Firebase not initialized."}), 503
     
     try:
         print(f"Querying Firestore for trip: {code}")  # Debug logging
