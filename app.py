@@ -9,13 +9,18 @@ import firebase_admin
 from firebase_admin import credentials, firestore
 
 app = Flask(__name__)
-CORS(app, resources={
-    r"/*": {
-        "origins": ["http://localhost:5173", "https://mapsyncfrontend-chi.vercel.app"],
-        "methods": ["GET", "POST", "OPTIONS"],
-        "allow_headers": ["Content-Type", "Authorization"]
-    }
-})
+
+# Determine the environment and set CORS origins accordingly
+FLASK_ENV = os.getenv('FLASK_ENV')
+
+if FLASK_ENV == 'production':
+    # For production, allow requests from your deployed frontend URL
+    CORS(app, resources={r"/*": {"origins": "https://mapsync.onrender.com"}})
+    print("CORS configured for production (https://mapsync.onrender.com)")
+else:
+    # For development, allow requests from localhost:5173
+    CORS(app, resources={r"/*": {"origins": "http://localhost:5173"}})
+    print("CORS configured for development (http://localhost:5173)")
 
 # Initialize Firebase Admin SDK conditionally
 db = None
