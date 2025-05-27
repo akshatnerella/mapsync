@@ -3,6 +3,7 @@ from firebase_admin import auth, initialize_app, firestore
 from flask_cors import CORS
 import random
 import string
+import os
 
 app = Flask(__name__)
 CORS(app, resources={
@@ -13,8 +14,13 @@ CORS(app, resources={
     }
 })
 
-initialize_app()
-db = firestore.client()
+# Initialize Firebase only if credentials are available
+if os.getenv('GOOGLE_APPLICATION_CREDENTIALS'):
+    initialize_app()
+    db = firestore.client()
+else:
+    print("Warning: Running in development mode without Firebase credentials")
+    db = None
 
 @app.route("/auth/verify-token", methods=["POST"])
 def verify_token():
