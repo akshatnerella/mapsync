@@ -1,10 +1,13 @@
 from flask import Flask, request, jsonify
-from firebase_admin import auth, initialize_app, firestore
+from firebase_admin import auth, initialize_app, firestore, credentials
 import random
 import string
 
 app = Flask(__name__)
-initialize_app()
+
+# Initialize Firebase with credentials
+cred = credentials.Certificate('firebase-credentials.json')
+initialize_app(cred)
 db = firestore.client()
 
 @app.route("/auth/verify-token", methods=["POST"])
@@ -33,53 +36,6 @@ def login():
         return jsonify({"status": "success", "user_id": "dummy_uid"})
     else:
         return jsonify({"status": "error", "message": "Invalid credentials"}), 401
-
-@app.route("/trips", methods=["POST"])
-def create_trip():
-    # Create new trip
-    data = request.json
-    required = ["origin", "destination"]
-    if not all(field in data for field in required):
-        return jsonify({"status": "error", "message": "Missing required fields"}), 400
-    
-    # Generate short invite code
-    invite_code = generate_invite_code()  # You'll need to implement this
-    
-    # Create Google Maps deep link
-    maps_link = create_maps_link(data["origin"], data["destination"], data.get("stops", []))
-    
-    # Save to Firebase
-    trip_data = {
-        "origin": data["origin"],
-        "destination": data["destination"],
-        "stops": data.get("stops", []),
-        "created_by": request.user_id,  # You'll need middleware for this
-        "invite_code": invite_code,
-        "maps_link": maps_link,
-        "participants": [request.user_id]
-    }
-    
-    return jsonify({
-        "status": "success",
-        "trip_id": "new_trip_id",
-        "invite_code": invite_code,
-        "maps_link": maps_link
-    })
-
-@app.route("/trips/<trip_id>", methods=["GET"])
-def get_trip(trip_id):
-    # Fetch trip details
-    return jsonify({"status": "success", "trip": trip_data})
-
-@app.route("/trips/join/<invite_code>", methods=["POST"])
-def join_trip(invite_code):
-    # Join existing trip
-    return jsonify({"status": "success", "trip": trip_data})
-
-@app.route("/trips/user/<user_id>", methods=["GET"])
-def get_user_trips(user_id):
-    # Get user's trip history
-    return jsonify({"status": "success", "trips": trips})
 
 def generate_invite_code(length=6):
     characters = string.ascii_uppercase + string.digits
@@ -112,28 +68,13 @@ def create_trip():
     # Use invite code as document ID
     db.collection('trips').document(invite_code).set(trip_data)
     
-    # Create shareable link with the frontend URL
-    share_link = f"https://mapsyncfrontend.vercel.app/{invite_code}"
+    # Create shareable link with the new frontend URL format
+    share_link = f"https://mapsyncfrontend-chi.vercel.app/trips/{invite_code}"
     
     return jsonify({
         "status": "success",
         "shareLink": share_link
     })
-
-@app.route("/trips/<trip_id>", methods=["GET"])
-def get_trip(trip_id):
-    # Fetch trip details
-    return jsonify({"status": "success", "trip": trip_data})
-
-@app.route("/trips/join/<invite_code>", methods=["POST"])
-def join_trip(invite_code):
-    # Join existing trip
-    return jsonify({"status": "success", "trip": trip_data})
-
-@app.route("/trips/user/<user_id>", methods=["GET"])
-def get_user_trips(user_id):
-    # Get user's trip history
-    return jsonify({"status": "success", "trips": trips})
 
 if __name__ == "__main__":
     app.run(debug=True)
