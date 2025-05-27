@@ -74,5 +74,24 @@ def create_trip():
         "shareLink": f"trips/{invite_code}"
     })
 
+@app.route("/trips/<code>", methods=["GET"])
+def get_trip(code):
+    if not db:
+        return jsonify({"status": "error", "message": "Firestore not available"}), 500
+    
+    try:
+        trip_ref = db.collection('trips').document(code)
+        trip_data = trip_ref.get()
+        
+        if not trip_data.exists:
+            return jsonify({"status": "error", "message": "Trip not found"}), 404
+            
+        return jsonify({
+            "status": "success",
+            "trip": trip_data.to_dict()
+        })
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
+
 if __name__ == "__main__":
     app.run(debug=True)
