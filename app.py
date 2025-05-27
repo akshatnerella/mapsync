@@ -76,22 +76,31 @@ def create_trip():
 
 @app.route("/trips/<code>", methods=["GET"])
 def get_trip(code):
+    print(f"Attempting to fetch trip with code: {code}")  # Debug logging
+    
     if not db:
-        return jsonify({"status": "error", "message": "Firestore not available"}), 500
+        print("Firestore not initialized")  # Debug logging
+        return jsonify({"status": "error", "message": "Database not available"}), 503
     
     try:
+        print(f"Querying Firestore for trip: {code}")  # Debug logging
         trip_ref = db.collection('trips').document(code)
         trip_data = trip_ref.get()
         
-        if not trip_data.exists:
+        if trip_data.exists:
+            trip_dict = trip_data.to_dict()
+            print(f"Found trip: {trip_dict}")  # Debug logging
+            return jsonify({
+                "status": "success",
+                "trip": trip_dict
+            })
+        else:
+            print(f"Trip not found: {code}")  # Debug logging
             return jsonify({"status": "error", "message": "Trip not found"}), 404
             
-        return jsonify({
-            "status": "success",
-            "trip": trip_data.to_dict()
-        })
     except Exception as e:
-        return jsonify({"status": "error", "message": str(e)}), 500
+        print(f"Error fetching trip: {str(e)}")  # Debug logging
+        return jsonify({"status": "error", "message": "Internal server error"}), 500
 
 if __name__ == "__main__":
     app.run(debug=True)
